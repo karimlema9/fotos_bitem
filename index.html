@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#101114"><meta name="description" content="Galería de fotografías para compartir con amigos">
+  <title>Nuestros momentos · Galería</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="#inicio"><span class="brand-icon">✳</span> momentos<span class="brand-dot">.</span></a><span class="top-note">Nuestra galería de recuerdos</span></header>
+  <main id="inicio">
+    <section class="hero"><div class="eyebrow"><span class="pulse"></span> GALERÍA COMPARTIDA</div><h1>Los mejores momentos<br><em>merecen quedarse.</em></h1><p>Un lugar para volver a esas fotos que siempre nos hacen sonreír.</p><div class="hero-bottom"><span id="counter">Cargando fotografías…</span><span>DESLIZA PARA EXPLORAR ↓</span></div></section>
+    <section class="gallery-section" aria-label="Fotografías"><div class="gallery" id="gallery"></div><div class="empty" id="empty" hidden><div class="empty-icon">▧</div><h2>Aún no hay fotografías</h2><p>Añade imágenes a la carpeta <code>fotos/</code> y ejecuta el generador de listado.</p></div><div id="sentinel" aria-hidden="true"></div><p class="end-note" id="end-note" hidden>✳ &nbsp; Hasta aquí nuestros recuerdos</p></section>
+  </main>
+  <footer>HECHO PARA COMPARTIR MOMENTOS <span>✳</span></footer>
+  <dialog id="lightbox" aria-label="Visor de fotografías"><div class="viewer"><button id="close" class="viewer-button close" aria-label="Cerrar">✕</button><button id="prev" class="viewer-button prev" aria-label="Anterior">‹</button><img id="large-image" alt="Fotografía ampliada"><button id="next" class="viewer-button next" aria-label="Siguiente">›</button><div class="viewer-caption"><span id="photo-name"></span><span id="position"></span></div></div></dialog>
+  <script src="app.js" defer></script>
+</body>
+</html>
