@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
 :root{color-scheme:dark;--bg:#0d111b;--panel:#171f2d;--fg:#f4f7fd;--muted:#9faec3;--accent:#48a6ff;--line:#263246}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -14,8 +13,8 @@ h1{font:800 clamp(32px,4vw,52px)/1.15 Manrope,sans-serif;letter-spacing:-.06em;m
 .gallery{columns:4 230px;column-gap:16px}
 .tile{position:relative;display:block;margin-bottom:16px;break-inside:avoid;background:var(--panel);border-radius:12px;overflow:hidden;animation:appear .35s both}
 .tile-open{position:relative;padding:0;border:0;display:block;width:100%;background:none;cursor:zoom-in}
-.tile-open img{width:100%;height:auto;display:block;filter:brightness(.96);transition:filter .22s}
-.tile:hover .tile-open img{filter:brightness(1.08)}
+.tile-open img{width:100%;height:auto;display:block;transition:filter .22s}
+.tile:hover .tile-open img{filter:brightness(1.1)}
 .tile-download{position:absolute;right:12px;bottom:12px;padding:9px 13px;border:1px solid #ffffff44;border-radius:8px;background:rgba(12,23,39,.86);backdrop-filter:blur(10px);color:#fff;text-decoration:none;font-weight:700;font-size:12px;opacity:0;transform:translateY(6px);transition:opacity .18s,transform .18s,background .18s;z-index:2}
 .tile:hover .tile-download,.tile:focus-within .tile-download{opacity:1;transform:none}
 .tile-download:hover{background:#267bc7}

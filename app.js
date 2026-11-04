@@ -9,10 +9,19 @@ const position = document.getElementById('position');
 const downloadLarge = document.getElementById('download-large');
 const hoverPreview = document.getElementById('hover-preview');
 const hoverImage = document.getElementById('hover-image');
-const PAGE_SIZE = 16;
+const PAGE_SIZE = 24;
 const canHover = window.matchMedia('(hover: hover) and (pointer: fine)');
 let photos = [], loaded = 0, active = 0;
 
+const PATH_OK = /^(fotos|miniaturas|medianas)\/[\w\-.%/ ]+$/i;
+// Acepta tanto rutas simples como objetos {src, thumb, medium, w, h}.
+function normalize(item) {
+  const o = typeof item === 'string' ? { src: item } : item;
+  if (!o || typeof o.src !== 'string') return null;
+  const paths = [o.src, o.thumb, o.medium].filter(Boolean);
+  if (!paths.every(p => typeof p === 'string' && PATH_OK.test(p) && !p.includes('..'))) return null;
+  return { src: o.src, thumb: o.thumb || o.src, medium: o.medium || o.src, w: o.w | 0, h: o.h | 0 };
+}
 function filenameFor(path) { return path.split('/').pop(); }
 function labelFor(path) {
   try { return decodeURIComponent(filenameFor(path)).replace(/\.[^.]+$/, '').replace(/[-_]/g, ' '); }
@@ -85,7 +94,7 @@ function updateZoom(event) {
   hoverImage.style.top = `${-fractionY * Math.max(0, displayedHeight - viewHeight)}px`;
 }
 
-function showPreview(path, event, tile, img) {
+function showPreview(item, event, tile, img) {
   if (!canHover.matches || lightbox.open || event.target.closest('.tile-download')) return;
   if (!img.complete || !img.naturalWidth) return;
   if (hoverTile !== tile) {
@@ -94,7 +103,7 @@ function showPreview(path, event, tile, img) {
     hoverSource = img;
     const button = img.parentElement;
     button.appendChild(lens);
-    hoverImage.src = path;
+    hoverImage.src = item.medium;
     hoverPreview.hidden = false;
     hoverPreview.classList.add('is-visible');
   }
@@ -104,21 +113,24 @@ function showPreview(path, event, tile, img) {
 function showPhoto(index) {
   hidePreview();
   active = (index + photos.length) % photos.length;
-  const path = photos[active];
-  largeImage.src = path;
-  largeImage.alt = labelFor(path);
-  photoName.textContent = labelFor(path);
+  const item = photos[active];
+  largeImage.src = item.medium;
+  largeImage.alt = labelFor(item.src);
+  photoName.textContent = labelFor(item.src);
   position.textContent = `${active + 1} / ${photos.length}`;
-  downloadLarge.href = path;
-  downloadLarge.download = filenameFor(path);
+  downloadLarge.href = item.src;
+  downloadLarge.download = filenameFor(item.src);
   if (!lightbox.open) lightbox.showModal();
+  // Precarga las fotos vecinas para que el cambio sea instantáneo.
+  for (const d of [1, -1]) new Image().src = photos[(active + d + photos.length) % photos.length].medium;
 }
 function loadMore() {
   if (loaded >= photos.length) return;
   const until = Math.min(loaded + PAGE_SIZE, photos.length);
   const fragment = document.createDocumentFragment();
   for (let i = loaded; i < until; i++) {
-    const path = photos[i];
+    const item = photos[i];
+    const path = item.src;
     const tile = document.createElement('article');
     tile.className = 'tile';
     const imageButton = document.createElement('button');
@@ -126,14 +138,16 @@ function loadMore() {
     imageButton.className = 'tile-open';
     imageButton.setAttribute('aria-label', `Ver ${labelFor(path)} en grande`);
     const img = document.createElement('img');
-    img.src = path;
+    img.src = item.thumb;
     img.alt = labelFor(path);
-    img.loading = 'lazy';
+    if (item.w && item.h) { img.width = item.w; img.height = item.h; }
+    img.loading = i < 8 ? 'eager' : 'lazy';
+    if (i < 4) img.fetchPriority = 'high';
     img.decoding = 'async';
     imageButton.appendChild(img);
     imageButton.addEventListener('click', () => showPhoto(i));
-    tile.addEventListener('pointerenter', event => showPreview(path, event, tile, img));
-    tile.addEventListener('pointermove', event => showPreview(path, event, tile, img));
+    tile.addEventListener('pointerenter', event => showPreview(item, event, tile, img));
+    tile.addEventListener('pointermove', event => showPreview(item, event, tile, img));
     tile.addEventListener('pointerleave', hidePreview);
     const download = document.createElement('a');
     download.className = 'tile-download';
@@ -153,7 +167,7 @@ function loadMore() {
 }
 const observer = new IntersectionObserver(entries => {
   if (entries.some(entry => entry.isIntersecting)) loadMore();
-}, { rootMargin: '700px' });
+}, { rootMargin: '1200px' });
 document.getElementById('close').addEventListener('click', () => lightbox.close());
 document.getElementById('prev').addEventListener('click', () => showPhoto(active - 1));
 document.getElementById('next').addEventListener('click', () => showPhoto(active + 1));
@@ -172,11 +186,11 @@ lightbox.addEventListener('touchend', event => {
 window.addEventListener('scroll', hidePreview, { passive: true });
 window.addEventListener('resize', hidePreview);
 canHover.addEventListener('change', hidePreview);
-fetch(`fotos.json?v=2&t=${Date.now()}`, { cache: 'no-store' })
+fetch('fotos.json?v=4', { cache: 'no-cache' })
   .then(response => { if (!response.ok) throw Error('No se pudo leer fotos.json'); return response.json(); })
   .then(data => {
     if (!Array.isArray(data)) throw Error('fotos.json debe contener una lista');
-    photos = data.filter(path => typeof path === 'string' && /^fotos\/[\w\-.%/ ]+$/i.test(path) && !path.includes('..'));
+    photos = data.map(normalize).filter(Boolean);
     if (!photos.length) {
       counter.textContent = '0 fotos';
       document.getElementById('empty').hidden = false;
