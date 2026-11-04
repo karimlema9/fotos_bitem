@@ -36,3 +36,4 @@ dialog{border:0;padding:0;max-width:none;max-height:none;width:100vw;height:100d
 @media(hover:none){.tile-download{opacity:1;transform:none}}
 @media(max-width:700px){.topbar{min-height:65px}.gallery-section{padding-top:28px}.gallery{columns:2 140px;column-gap:9px}.tile{margin-bottom:9px;border-radius:8px}.tile-download{padding:7px 9px;right:7px;bottom:7px;font-size:11px}.viewer{padding:70px 8px 105px}.viewer-button.prev,.viewer-button.next{top:auto;bottom:22px}.viewer-caption{bottom:83px;left:15px;right:15px;justify-content:center}.viewer-caption #photo-name,.viewer-caption #position{display:none}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+.gallery-note{margin:-14px 0 28px;color:var(--muted);font-size:14px;line-height:1.5}
