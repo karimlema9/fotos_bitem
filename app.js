@@ -18,24 +18,88 @@ function labelFor(path) {
   try { return decodeURIComponent(filenameFor(path)).replace(/\.[^.]+$/, '').replace(/[-_]/g, ' '); }
   catch { return filenameFor(path); }
 }
-function hidePreview() { hoverPreview.hidden = true; hoverImage.removeAttribute('src'); }
-function positionPreview(x, y) {
-  const gap = 22;
-  const rect = hoverPreview.getBoundingClientRect();
-  const width = rect.width || 430, height = rect.height || 490;
-  let left = x + gap;
-  if (left + width > window.innerWidth - 12) left = x - width - gap;
-  left = Math.max(12, Math.min(left, window.innerWidth - width - 12));
-  let top = y - height * 0.45;
-  top = Math.max(12, Math.min(top, window.innerHeight - height - 12));
+// Lupa estilo e-commerce: el recuadro marca la zona visible en el panel ampliado.
+const ZOOM = 2.8;
+let hoverTile = null;
+let hoverSource = null;
+const lens = document.createElement('div');
+lens.className = 'zoom-lens';
+lens.setAttribute('aria-hidden', 'true');
+
+function hidePreview() {
+  hoverPreview.hidden = true;
+  hoverPreview.classList.remove('is-visible');
+  hoverImage.removeAttribute('src');
+  hoverImage.style.removeProperty('width');
+  hoverImage.style.removeProperty('height');
+  hoverImage.style.removeProperty('left');
+  hoverImage.style.removeProperty('top');
+  lens.remove();
+  hoverTile = null;
+  hoverSource = null;
+}
+
+function positionPreview(x, y, rect) {
+  const gap = 20;
+  const width = hoverPreview.offsetWidth || 430;
+  const height = hoverPreview.offsetHeight || 490;
+  // Priorizar la derecha de la fotografía; cambiar a la izquierda si no cabe.
+  let left = rect.right + gap;
+  if (left + width > window.innerWidth - 12) left = rect.left - width - gap;
+  // Si la foto está centrada en una pantalla estrecha, elegir el lado con más espacio.
+  if (left < 12) left = Math.max(12, Math.min(x + gap, window.innerWidth - width - 12));
+  const top = Math.max(12, Math.min(rect.top, window.innerHeight - height - 12));
   hoverPreview.style.left = `${left}px`;
   hoverPreview.style.top = `${top}px`;
 }
-function showPreview(path, event) {
-  if (!canHover.matches || lightbox.open) return;
-  hoverImage.src = path;
-  hoverPreview.hidden = false;
-  positionPreview(event.clientX, event.clientY);
+
+function updateZoom(event) {
+  if (!hoverTile || !hoverSource || hoverPreview.hidden) return;
+  const rect = hoverSource.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+
+  const viewWidth = hoverPreview.clientWidth;
+  const viewHeight = hoverPreview.clientHeight;
+  // Se usa object-fit: cover para llenar el panel manteniendo proporciones.
+  const naturalWidth = hoverSource.naturalWidth || rect.width;
+  const naturalHeight = hoverSource.naturalHeight || rect.height;
+  const scale = Math.max(viewWidth / naturalWidth, viewHeight / naturalHeight) * ZOOM;
+  const displayedWidth = naturalWidth * scale;
+  const displayedHeight = naturalHeight * scale;
+  const regionWidth = Math.min(rect.width, rect.width * viewWidth / displayedWidth);
+  const regionHeight = Math.min(rect.height, rect.height * viewHeight / displayedHeight);
+  const x = Math.max(0, Math.min(event.clientX - rect.left, rect.width));
+  const y = Math.max(0, Math.min(event.clientY - rect.top, rect.height));
+  const lensX = Math.max(0, Math.min(x - regionWidth / 2, rect.width - regionWidth));
+  const lensY = Math.max(0, Math.min(y - regionHeight / 2, rect.height - regionHeight));
+  lens.style.width = `${regionWidth}px`;
+  lens.style.height = `${regionHeight}px`;
+  lens.style.left = `${lensX}px`;
+  lens.style.top = `${lensY}px`;
+
+  const fractionX = rect.width > regionWidth ? lensX / (rect.width - regionWidth) : 0.5;
+  const fractionY = rect.height > regionHeight ? lensY / (rect.height - regionHeight) : 0.5;
+  hoverImage.style.width = `${displayedWidth}px`;
+  hoverImage.style.height = `${displayedHeight}px`;
+  hoverImage.style.left = `${-fractionX * Math.max(0, displayedWidth - viewWidth)}px`;
+  hoverImage.style.top = `${-fractionY * Math.max(0, displayedHeight - viewHeight)}px`;
+}
+
+function showPreview(path, event, tile, img) {
+  if (!canHover.matches || lightbox.open || event.target.closest('.tile-download')) return;
+  if (!img.complete || !img.naturalWidth) return;
+  if (hoverTile !== tile) {
+    hidePreview();
+    hoverTile = tile;
+    hoverSource = img;
+    const button = img.parentElement;
+    button.appendChild(lens);
+    hoverImage.src = path;
+    hoverPreview.hidden = false;
+    hoverPreview.classList.add('is-visible');
+  }
+  positionPreview(event.clientX, event.clientY, img.getBoundingClientRect());
+  updateZoom(event);
 }
 function showPhoto(index) {
   hidePreview();
@@ -68,8 +132,8 @@ function loadMore() {
     img.decoding = 'async';
     imageButton.appendChild(img);
     imageButton.addEventListener('click', () => showPhoto(i));
-    tile.addEventListener('pointerenter', event => showPreview(path, event));
-    tile.addEventListener('pointermove', event => { if (!hoverPreview.hidden) positionPreview(event.clientX, event.clientY); });
+    tile.addEventListener('pointerenter', event => showPreview(path, event, tile, img));
+    tile.addEventListener('pointermove', event => showPreview(path, event, tile, img));
     tile.addEventListener('pointerleave', hidePreview);
     const download = document.createElement('a');
     download.className = 'tile-download';
